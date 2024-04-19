@@ -267,6 +267,7 @@ public class LogcatActivity extends BaseActivity {
         l.add("system");
         l.add("crash");
         l.add("events");
+        l.add("kernel");
         return l;
     }
 
