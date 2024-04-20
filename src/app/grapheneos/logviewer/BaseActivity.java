@@ -373,11 +373,8 @@ public abstract class BaseActivity extends Activity {
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if (requestCode >= SnapshotSaver.MIN_REQUEST_CODE) {
-            if (resultCode != RESULT_OK || data == null) {
-                return;
-            }
-            SnapshotSaver.onActivityResult(this, requestCode, data.getData());
+        if (requestCode == SnapshotSaver.ACTIVITY_REQUEST_CODE) {
+            SnapshotSaver.onActivityResult(this, resultCode, data);
         }
     }
 }

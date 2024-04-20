@@ -23,6 +23,9 @@ public class ViewModel {
     // editable by the user
     String description = "";
 
+    @Nullable
+    Snapshot pendingSnapshot;
+
     ViewModel(@Nullable String sourcePackage, String title, String header, String body) {
         this.sourcePackage = sourcePackage;
         this.title = title;

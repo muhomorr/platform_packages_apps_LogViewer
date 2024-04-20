@@ -1,11 +1,12 @@
 package app.grapheneos.logviewer;
 
+import android.annotation.Nullable;
+import android.app.Activity;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.ParcelFileDescriptor;
-import android.util.LruCache;
 
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -13,9 +14,7 @@ import java.util.concurrent.Executors;
 import static app.grapheneos.logviewer.Utils.showToast;
 
 class SnapshotSaver {
-    static final int MIN_REQUEST_CODE = 1000;
-    private static int activityRequestCodeSrc = MIN_REQUEST_CODE;
-    private static LruCache<Integer, ViewModel.Snapshot> pendingSnapshots = new LruCache(5);
+    static final int ACTIVITY_REQUEST_CODE = 1000;
 
     static void start(BaseActivity ctx) {
         ViewModel.Snapshot s = ViewModel.Snapshot.create(ctx.viewModel);
@@ -23,17 +22,27 @@ class SnapshotSaver {
         i.setType(ViewModel.Snapshot.MIME_TYPE);
         i.putExtra(Intent.EXTRA_TITLE, s.fileName);
         i.addCategory(Intent.CATEGORY_OPENABLE);
-        int reqCode = activityRequestCodeSrc++;
-        pendingSnapshots.put(Integer.valueOf(reqCode), s);
-        ctx.startActivityForResult(i, reqCode);
+        ctx.viewModel.pendingSnapshot = s;
+        ctx.startActivityForResult(i, ACTIVITY_REQUEST_CODE);
     }
 
-    static void onActivityResult(BaseActivity ctx, int requestCode, Uri uri) {
-        ViewModel.Snapshot s = pendingSnapshots.remove(Integer.valueOf(requestCode));
-        if (s == null) {
+    static void onActivityResult(BaseActivity ctx, int resultCode, Intent resultIntent) {
+        final ViewModel.Snapshot pendingSnapshot = ctx.viewModel.pendingSnapshot;
+        ctx.viewModel.pendingSnapshot = null;
+
+        if (resultCode != Activity.RESULT_OK || resultIntent == null) {
             return;
         }
-        bgExecutor.execute(() -> writeToUri(ctx, s, uri));
+
+        if (pendingSnapshot == null) {
+            // will happen if our process was recreated while file picker was in the foreground
+            ErrorDialog.show(ctx, ctx.getText(R.string.unable_to_save_file),
+                    new IllegalStateException("no pending ViewModel snapshot"));
+            return;
+        }
+
+        Uri uri = resultIntent.getData();
+        bgExecutor.execute(() -> writeToUri(ctx, pendingSnapshot, uri));
     }
 
     private static Executor bgExecutor = Executors.newCachedThreadPool();
