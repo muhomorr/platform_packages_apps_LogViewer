@@ -18,6 +18,7 @@ public class ViewModel {
     final String title;
     final String header;
     final String body;
+    final boolean showCopyButton;
 
     // editable by the user
     String description = "";
@@ -27,6 +28,8 @@ public class ViewModel {
         this.title = title;
         this.header = header;
         this.body = body;
+        int maxSizeForCopy = 50_000;
+        this.showCopyButton = body.length() < maxSizeForCopy && body.getBytes(UTF_8).length < maxSizeForCopy;
     }
 
     List<String> createHeaderLines() {

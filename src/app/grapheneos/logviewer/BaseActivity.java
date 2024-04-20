@@ -134,10 +134,15 @@ public abstract class BaseActivity extends Activity {
             l.setGravity(Gravity.CENTER);
             btnLayout = l;
         }
-        {
+        if (viewModel.showCopyButton) {
             var b = new Button(ctx);
             b.setText(R.string.action_copy);
             b.setOnClickListener(v -> viewModel.copyToClipbord(this));
+            btnLayout.addView(b);
+        } else {
+            var b = new Button(ctx);
+            b.setText(R.string.action_save);
+            b.setOnClickListener(v -> SnapshotSaver.start(this));
             btnLayout.addView(b);
         }
         if (shouldShowReportButton()) {
@@ -328,7 +333,9 @@ public abstract class BaseActivity extends Activity {
         if (shouldShowReportButton()) {
             miShare = menu.add(R.string.action_share);
         }
-        miSave = menu.add(R.string.action_save);
+        if (viewModel.showCopyButton) { // false when "Copy" button is replace with "Save" button
+            miSave = menu.add(R.string.action_save);
+        }
         miSetDescription = menu.add(getDescriptionActionTitle())
             .setIcon(R.drawable.ic_add_description)
             .setShowAsActionFlags(MenuItem.SHOW_AS_ACTION_IF_ROOM);
