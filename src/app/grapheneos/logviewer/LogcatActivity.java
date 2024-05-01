@@ -75,7 +75,7 @@ public class LogcatActivity extends BaseActivity {
         cmd.add("--dividers");
 
         var format = new ArrayList<String>();
-        format.add("epoch");
+        format.add("UTC");
         format.add("printable");
         if (targetPkg == null) {
             format.add("uid");
@@ -138,6 +138,15 @@ public class LogcatActivity extends BaseActivity {
         ;
 
         String text = new String(logcatBytes, StandardCharsets.UTF_8);
+
+        // remove repetitive +0000 from timestamps
+        var sb = new StringBuilder(text.length());
+        for (String line : text.split("\n")) {
+            line = line.replaceFirst(" \\+0000", "");
+            sb.append(line);
+            sb.append('\n');
+        }
+        text = sb.toString();
 
         String title = switch (logType) {
             case TYPE_APP_LOG -> getString(R.string.app_log_title, Utils.loadAppLabel(this, targetPkg));
