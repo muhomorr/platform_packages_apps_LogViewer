@@ -8,13 +8,20 @@ import android.content.pm.InstallSourceInfo;
 import android.content.pm.PackageManager;
 import android.provider.Settings;
 import android.service.oemlock.OemLockManager;
+import android.util.Log;
 import android.widget.Toast;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.PrintStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class Utils {
 
@@ -40,6 +47,19 @@ public class Utils {
         var baos = new ByteArrayOutputStream(1000);
         t.printStackTrace(new PrintStream(baos));
         return baos.toString();
+    }
+
+    @Nullable
+    public static String readFileAsString(String path) {
+        byte[] bytes;
+        Path p = Paths.get(path);
+        try {
+            bytes = Files.readAllBytes(p);
+        } catch (IOException e) {
+            Log.e("readFileAsString", "", e);
+            return null;
+        }
+        return new String(bytes, UTF_8);
     }
 
     public static CharSequence loadAppLabel(Context ctx, String pkgName) {

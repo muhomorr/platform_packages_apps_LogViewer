@@ -66,6 +66,9 @@ public class ErrorReportActivity extends BaseActivity {
             if (!msg.contains(Build.FINGERPRINT)) {
                 sb.append("osVersion: ").append(Build.FINGERPRINT).append('\n');
             }
+            if (msg.charAt(0) != '\n' && !msg.startsWith("osVersion: ")) {
+                sb.append('\n');
+            }
             sb.append(msg);
             body = sb.toString();
         }
@@ -171,6 +174,14 @@ public class ErrorReportActivity extends BaseActivity {
                 if (i == null) {
                     return null;
                 }
+                String tracesFile = i.tracesFilePath;
+                if (tracesFile != null) {
+                    String s = Utils.readFileAsString(tracesFile);
+                    if (s != null) {
+                        printer.println(s);
+                    }
+                }
+                printer.println("\nAnrInfo dump:");
                 i.dump(printer, "");
             }
             case ApplicationErrorReport.TYPE_BATTERY -> {
