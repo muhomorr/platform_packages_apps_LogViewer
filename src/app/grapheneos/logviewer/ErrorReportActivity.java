@@ -86,6 +86,11 @@ public class ErrorReportActivity extends BaseActivity {
         if (aer == null) {
             return null;
         }
+        String body = createAerBody(aer);
+        if (body == null) {
+            Log.e(TAG, "invalid ApplicationErrorReport");
+            return null;
+        }
         String sourcePkg = aer.packageName;
         String title = createTitle(sourcePkg);
         String header = createAerHeader(aer);
@@ -93,7 +98,6 @@ public class ErrorReportActivity extends BaseActivity {
         if (headerExt != null) {
             header += '\n' + headerExt;
         }
-        String body = createAerBody(aer);
         return new ViewModel(sourcePkg, title, header, body);
     }
 
@@ -123,6 +127,7 @@ public class ErrorReportActivity extends BaseActivity {
         return String.join("\n", l);
     }
 
+    @Nullable
     private static String createAerBody(ApplicationErrorReport r) {
         if (r.type == ApplicationErrorReport.TYPE_CRASH) {
             String stackTrace = r.crashInfo.stackTrace;
@@ -180,6 +185,9 @@ public class ErrorReportActivity extends BaseActivity {
                     return null;
                 }
                 i.dump(printer, "");
+            }
+            default -> {
+                return null;
             }
         }
         return sb.toString();
