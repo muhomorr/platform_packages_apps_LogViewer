@@ -3,5 +3,6 @@
     <privapp-permissions package="app.grapheneos.logviewer">
         <permission name="android.permission.READ_LOGS" />
         <permission name="android.permission.READ_LOGS_FULL" />
+        <permission name="android.permission.READ_OEM_UNLOCK_STATE" />
     </privapp-permissions>
 </permissions>

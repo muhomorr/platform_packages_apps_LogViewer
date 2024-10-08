@@ -109,6 +109,7 @@ public class ErrorReportActivity extends BaseActivity {
         ArrayList<String> l = new ArrayList<>();
         l.add("type: " + aerTypeToString(r.type));
         l.add("osVersion: " + Build.FINGERPRINT);
+        Utils.maybeAddFlags(this, l);
         l.add("package: " + r.packageName + ':' + r.packageVersion);
         l.add("process: " + r.processName);
         if (r.type == ApplicationErrorReport.TYPE_CRASH) {

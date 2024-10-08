@@ -128,14 +128,18 @@ public class LogcatActivity extends BaseActivity {
             return null;
         }
 
-        String header =
-            "type: logcat"
-            + "\nosVersion: " + Build.FINGERPRINT
-            + (targetPkg != null ? "\npackageName: " + targetPkg + ":" + packageVersion : "")
-            + "\nbuffers: " + logBuffersStr
-            + "\nlevel: " + logLevelStr.toLowerCase()
-            + (!isEmpty(filterRegex) ? ("\nfilterRegex: " + filterRegex) : "")
-        ;
+        var header = new ArrayList<String>();
+        header.add("type: logcat");
+        header.add("osVersion: " + Build.FINGERPRINT);
+        Utils.maybeAddFlags(this, header);
+        if (targetPkg != null) {
+            header.add("packageName: " + targetPkg + ":" + packageVersion);
+        }
+        header.add("buffers: " + logBuffersStr);
+        header.add("level: " + logLevelStr.toLowerCase());
+        if (!isEmpty(filterRegex)) {
+            header.add("filterRegex: " + filterRegex);
+        }
 
         String text = new String(logcatBytes, StandardCharsets.UTF_8);
 
@@ -170,7 +174,7 @@ public class LogcatActivity extends BaseActivity {
             title += " | " + filterRegex;
         }
 
-        return new ViewModel(targetPkg, title, header, text);
+        return new ViewModel(targetPkg, title, String.join("\n", header), text);
     }
 
     @Override

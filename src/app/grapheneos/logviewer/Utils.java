@@ -1,18 +1,40 @@
 package app.grapheneos.logviewer;
 
 import android.annotation.Nullable;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.InstallSourceInfo;
 import android.content.pm.PackageManager;
+import android.provider.Settings;
+import android.service.oemlock.OemLockManager;
 import android.widget.Toast;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 public class Utils {
+
+    public static void maybeAddFlags(Context ctx, ArrayList<String> dst) {
+        var l = new ArrayList<String>();
+
+        var olm = ctx.getSystemService(OemLockManager.class);
+        if (olm != null && olm.isDeviceOemUnlocked()) {
+            l.add("bootloader unlocked");
+        }
+
+        ContentResolver cr = ctx.getContentResolver();
+        if (Settings.Global.getInt(cr, Settings.Global.DEVELOPMENT_SETTINGS_ENABLED, 0) != 0) {
+            l.add("dev options enabled");
+        }
+
+        if (!l.isEmpty()) {
+            dst.add("flags: " + String.join(", ", l));
+        }
+    }
 
     public static String printStackTraceToString(Throwable t) {
         var baos = new ByteArrayOutputStream(1000);
