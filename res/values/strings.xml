@@ -20,6 +20,8 @@
     <string name="action_share">Share</string>
     <string name="action_report">Report</string>
 
+    <string name="action_more_info">More info</string>
+    <string name="toast_unable_to_show_more_info">Unable to show more info</string>
     <string name="action_show_log">Show log</string>
     <string name="action_show_system_log">Show system log</string>
 

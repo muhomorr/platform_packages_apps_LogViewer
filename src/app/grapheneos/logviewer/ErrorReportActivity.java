@@ -7,17 +7,18 @@ import android.ext.LogViewerApp;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
+import android.util.Pair;
 import android.util.StringBuilderPrinter;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.zip.GZIPInputStream;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static java.util.Collections.emptyList;
-import static java.util.Collections.singletonList;
 
 public class ErrorReportActivity extends BaseActivity {
     private static final String TAG = ErrorReportActivity.class.getSimpleName();
@@ -44,17 +45,24 @@ public class ErrorReportActivity extends BaseActivity {
             return null;
         }
 
-        byte[] msgGz = extras.getByteArray(LogViewerApp.EXTRA_GZIPPED_MESSAGE);
-        if (msgGz == null) {
-            return null;
-        }
-
         byte[] msgBytes;
-        try (var s = new GZIPInputStream(new ByteArrayInputStream(msgGz))) {
-            msgBytes = s.readAllBytes();
-        } catch (IOException e) {
-            Log.d(TAG, "", e);
-            return null;
+        if (extras.getBoolean(LogViewerApp.EXTRA_PREFER_TEXT_TOMBSTONE)) {
+            msgBytes = getTextTombstoneBytes();
+            if (msgBytes == null) {
+                Utils.showToast(this, getText(R.string.toast_unable_to_show_more_info));
+                return null;
+            }
+        } else {
+            byte[] msgGz = extras.getByteArray(LogViewerApp.EXTRA_GZIPPED_MESSAGE);
+            if (msgGz == null) {
+                return null;
+            }
+            try (var s = new GZIPInputStream(new ByteArrayInputStream(msgGz))) {
+                msgBytes = s.readAllBytes();
+            } catch (IOException e) {
+                Log.d(TAG, "", e);
+                return null;
+            }
         }
 
         String msg = new String(msgBytes, UTF_8);
@@ -220,8 +228,67 @@ public class ErrorReportActivity extends BaseActivity {
         return getIntent().getBooleanExtra(LogViewerApp.EXTRA_SHOW_REPORT_BUTTON, false);
     }
 
+    @Nullable
+    private Pair<File, Long> getTextTombstoneFile() {
+        Bundle extras = getIntent().getExtras();
+        if (extras == null) {
+            return null;
+        }
+
+        String path = extras.getString(LogViewerApp.EXTRA_TEXT_TOMBSTONE_FILE_PATH);
+        if (path == null) {
+            return null;
+        }
+        Long expectedLastModifiedB = extras.getNumber(LogViewerApp.EXTRA_TEXT_TOMBSTONE_LAST_MODIFIED_TIME);
+        if (expectedLastModifiedB == null) {
+            return null;
+        }
+        long expectedLastModified = expectedLastModifiedB.longValue();
+
+        File file = new File(path);
+        long lastModified = file.lastModified();
+        if (expectedLastModified != lastModified) {
+            Log.e(TAG, "lastModified mismatch: expected " + expectedLastModified + ", got " + lastModified);
+            return null;
+        }
+        return Pair.create(file, expectedLastModifiedB);
+    }
+
+    @Nullable
+    private byte[] getTextTombstoneBytes() {
+        Pair<File, Long> pair = getTextTombstoneFile();
+        if (pair == null) {
+            return null;
+        }
+
+        File file = pair.first;
+
+        byte[] bytes;
+        try {
+            bytes = Files.readAllBytes(file.toPath());
+        } catch (IOException e) {
+            Log.e(TAG, "", e);
+            return null;
+        }
+        if (file.lastModified() != pair.second.longValue()) {
+            // a race condition: file was modified since last check
+            return null;
+        }
+        return bytes;
+    }
+
     @Override
     List<BottomButton> createExtraBottomButtons() {
+        var list = new ArrayList<BottomButton>(7);
+        if (!getIntent().getBooleanExtra(LogViewerApp.EXTRA_PREFER_TEXT_TOMBSTONE, false)
+                && getTextTombstoneFile() != null) {
+            var bb = new BottomButton(getText(R.string.action_more_info), v -> {
+                var i = new Intent(getIntent());
+                i.putExtra(LogViewerApp.EXTRA_PREFER_TEXT_TOMBSTONE, true);
+                startActivity(i);
+            });
+            list.add(bb);
+        }
         String sourcePkg = viewModel.sourcePackage;
         if (sourcePkg != null) {
             var bb = new BottomButton(getText(R.string.action_show_log), v -> {
@@ -229,8 +296,8 @@ public class ErrorReportActivity extends BaseActivity {
                 i.putExtra(Intent.EXTRA_PACKAGE_NAME, sourcePkg);
                 startActivity(i);
             });
-            return singletonList(bb);
+            list.add(bb);
         }
-        return emptyList();
+        return list;
     }
 }
