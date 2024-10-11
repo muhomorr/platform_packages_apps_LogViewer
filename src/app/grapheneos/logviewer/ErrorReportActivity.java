@@ -123,7 +123,7 @@ public class ErrorReportActivity extends BaseActivity {
         Utils.maybeAddFlags(this, l);
         l.add("package: " + r.packageName + ':' + r.packageVersion);
         l.add("process: " + r.processName);
-        if (r.type == ApplicationErrorReport.TYPE_CRASH) {
+        if (r.type == ApplicationErrorReport.TYPE_CRASH && r.crashInfo.processUptimeMs > 0) {
             l.add("processUptime: " + r.crashInfo.processUptimeMs
                             + " + " + r.crashInfo.processStartupLatencyMs + " ms");
         }
