@@ -7,14 +7,16 @@ import android.ext.LogViewerApp;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
-import android.util.Pair;
 import android.util.StringBuilderPrinter;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.zip.GZIPInputStream;
 
@@ -97,14 +99,27 @@ public class ErrorReportActivity extends BaseActivity {
         if (aer == null) {
             return null;
         }
-        String body = createAerBody(aer);
+        String body;
+        boolean useTextTombstone = i.getBooleanExtra(LogViewerApp.EXTRA_PREFER_TEXT_TOMBSTONE, false);
+        if (useTextTombstone) {
+            byte[] bytes = getTextTombstoneBytes();
+            if (bytes == null) {
+                Utils.showToast(this, getText(R.string.toast_unable_to_show_more_info));
+                return null;
+            }
+            body = new String(bytes, UTF_8);
+        } else {
+            body = createAerBody(aer);
+        }
         if (body == null) {
             Log.e(TAG, "invalid ApplicationErrorReport");
             return null;
         }
         String sourcePkg = aer.packageName;
         String title = createTitle(sourcePkg);
-        String header = createAerHeader(aer);
+        String header = createAerHeader(aer,
+                // text tombstone includes OS version string already
+                !useTextTombstone);
         String headerExt = i.getStringExtra(Intent.EXTRA_TEXT);
         if (headerExt != null) {
             header += '\n' + headerExt;
@@ -116,10 +131,12 @@ public class ErrorReportActivity extends BaseActivity {
         return sourcePkg != null ? getString(R.string.error_report_title, Utils.loadAppLabel(this, sourcePkg)) : "";
     }
 
-    private String createAerHeader(ApplicationErrorReport r) {
+    private String createAerHeader(ApplicationErrorReport r, boolean includeOsVersion) {
         ArrayList<String> l = new ArrayList<>();
         l.add("type: " + aerTypeToString(r.type));
-        l.add("osVersion: " + Build.FINGERPRINT);
+        if (includeOsVersion) {
+            l.add("osVersion: " + Build.FINGERPRINT);
+        }
         Utils.maybeAddFlags(this, l);
         l.add("package: " + r.packageName + ':' + r.packageVersion);
         l.add("process: " + r.processName);
@@ -229,10 +246,18 @@ public class ErrorReportActivity extends BaseActivity {
     }
 
     @Nullable
-    private Pair<File, Long> getTextTombstoneFile() {
+    private TimestampedFile getTextTombstoneFile() {
         Bundle extras = getIntent().getExtras();
         if (extras == null) {
             return null;
+        }
+
+        var aer = extras.getParcelable(Intent.EXTRA_BUG_REPORT, ApplicationErrorReport.class);
+        if (aer != null) {
+            TimestampedFile res = getTextTombstoneFileFromAer(aer);
+            if (res != null) {
+                return res;
+            }
         }
 
         String path = extras.getString(LogViewerApp.EXTRA_TEXT_TOMBSTONE_FILE_PATH);
@@ -251,17 +276,53 @@ public class ErrorReportActivity extends BaseActivity {
             Log.e(TAG, "lastModified mismatch: expected " + expectedLastModified + ", got " + lastModified);
             return null;
         }
-        return Pair.create(file, expectedLastModifiedB);
+        return new TimestampedFile(file, lastModified);
+    }
+
+    @Nullable
+    public static TimestampedFile getTextTombstoneFileFromAer(ApplicationErrorReport aer) {
+        if (aer.type != ApplicationErrorReport.TYPE_CRASH) {
+            return null;
+        }
+
+        // crashInfo.stackTrace is filled out by NativeCrashListener in system_server before
+        // tombstoned writes tombstone to storage. Header of stackTrace string and header of text
+        // tombstone file are the same, so extract it to search for the matching text tombstone file.
+
+        ApplicationErrorReport.CrashInfo crashInfo = aer.crashInfo;
+        if (crashInfo == null) {
+            return null;
+        }
+        String stackTrace = crashInfo.stackTrace;
+        if (stackTrace == null) {
+            return null;
+        }
+        if (!stackTrace.startsWith("*** *** *** *** *** *** *** *** *** *** *** *** *** *** *** ***")) {
+            return null;
+        }
+        String timestampPrefix = "\nTimestamp: ";
+        int timestampIdx = stackTrace.indexOf(timestampPrefix);
+        if (timestampIdx < 0) {
+            return null;
+        }
+        int timestampEnd = stackTrace.indexOf('\n', timestampIdx + timestampPrefix.length());
+        if (timestampEnd < 0) {
+            return null;
+        }
+
+        byte[] header = stackTrace.substring(0, timestampEnd).getBytes(UTF_8);
+
+        return TombstoneUtils.findTombstoneByHeader(header);
     }
 
     @Nullable
     private byte[] getTextTombstoneBytes() {
-        Pair<File, Long> pair = getTextTombstoneFile();
-        if (pair == null) {
+        TimestampedFile tfile = getTextTombstoneFile();
+        if (tfile == null) {
             return null;
         }
 
-        File file = pair.first;
+        File file = tfile.file();
 
         byte[] bytes;
         try {
@@ -270,7 +331,7 @@ public class ErrorReportActivity extends BaseActivity {
             Log.e(TAG, "", e);
             return null;
         }
-        if (file.lastModified() != pair.second.longValue()) {
+        if (file.lastModified() != tfile.lastModified()) {
             // a race condition: file was modified since last check
             return null;
         }
