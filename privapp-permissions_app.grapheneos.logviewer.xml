@@ -4,5 +4,6 @@
         <permission name="android.permission.READ_LOGS" />
         <permission name="android.permission.READ_LOGS_FULL" />
         <permission name="android.permission.READ_OEM_UNLOCK_STATE" />
+        <permission name="android.permission.QUERY_USERS" />
     </privapp-permissions>
 </permissions>

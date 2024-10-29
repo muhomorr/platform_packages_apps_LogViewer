@@ -7,6 +7,7 @@
     <!-- needed for checking whether the bootloader is unlocked-->
     <uses-permission android:name="android.permission.READ_OEM_UNLOCK_STATE" />
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
+    <uses-permission android:name="android.permission.QUERY_USERS" />
 
     <permission android:name="app.grapheneos.logviewer.SHOW_LOGCAT"
         android:protectionLevel="signature|privileged" />

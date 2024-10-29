@@ -137,8 +137,8 @@ public class ErrorReportActivity extends BaseActivity {
         if (includeOsVersion) {
             l.add("osVersion: " + Build.FINGERPRINT);
         }
-        Utils.maybeAddFlags(this, l);
         l.add("package: " + r.packageName + ':' + r.packageVersion);
+        Utils.maybeAddHeaderLines(this, l);
         l.add("process: " + r.processName);
         if (r.type == ApplicationErrorReport.TYPE_CRASH && r.crashInfo.processUptimeMs > 0) {
             l.add("processUptime: " + r.crashInfo.processUptimeMs

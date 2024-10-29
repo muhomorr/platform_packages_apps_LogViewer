@@ -6,6 +6,8 @@ import android.content.Context;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.InstallSourceInfo;
 import android.content.pm.PackageManager;
+import android.os.UserHandle;
+import android.os.UserManager;
 import android.provider.Settings;
 import android.service.oemlock.OemLockManager;
 import android.util.Log;
@@ -20,26 +22,38 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class Utils {
 
-    public static void maybeAddFlags(Context ctx, ArrayList<String> dst) {
-        var l = new ArrayList<String>();
+    public static void maybeAddHeaderLines(Context ctx, ArrayList<String> dst) {
+        int userId = ctx.getUserId();
+        if (userId != UserHandle.USER_SYSTEM) {
+            var userManager = ctx.getSystemService(UserManager.class);
+            String userType = userManager.getUserInfo(userId).userType;
+            String prefix = "android.os.usertype.";
+            if (userType.startsWith(prefix)) {
+                userType = userType.substring(prefix.length());
+            }
+            dst.add("userType: " + userType.toLowerCase(Locale.US));
+        }
+
+        var flags = new ArrayList<String>();
 
         var olm = ctx.getSystemService(OemLockManager.class);
         if (olm != null && olm.isDeviceOemUnlocked()) {
-            l.add("bootloader unlocked");
+            flags.add("bootloader unlocked");
         }
 
         ContentResolver cr = ctx.getContentResolver();
         if (Settings.Global.getInt(cr, Settings.Global.DEVELOPMENT_SETTINGS_ENABLED, 0) != 0) {
-            l.add("dev options enabled");
+            flags.add("dev options enabled");
         }
 
-        if (!l.isEmpty()) {
-            dst.add("flags: " + String.join(", ", l));
+        if (!flags.isEmpty()) {
+            dst.add("flags: " + String.join(", ", flags));
         }
     }
 

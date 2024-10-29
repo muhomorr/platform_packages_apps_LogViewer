@@ -9,7 +9,6 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.UserManager;
 import android.text.Editable;
-import android.text.TextUtils;
 import android.util.Log;
 import android.util.SparseArray;
 import android.view.Menu;
@@ -131,7 +130,7 @@ public class LogcatActivity extends BaseActivity {
         var header = new ArrayList<String>();
         header.add("type: logcat");
         header.add("osVersion: " + Build.FINGERPRINT);
-        Utils.maybeAddFlags(this, header);
+        Utils.maybeAddHeaderLines(this, header);
         if (targetPkg != null) {
             header.add("packageName: " + targetPkg + ":" + packageVersion);
         }
