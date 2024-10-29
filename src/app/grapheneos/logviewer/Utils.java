@@ -5,6 +5,7 @@ import android.content.ContentResolver;
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.InstallSourceInfo;
+import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.os.UserHandle;
 import android.os.UserManager;
@@ -23,10 +24,28 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class Utils {
+
+    public static void addPackageInfoHeaderLines(Context ctx, ApplicationInfo ai, ArrayList<String> dst) {
+        dst.add("package: " + ai.packageName + ':' + ai.longVersionCode + ", targetSdk " + ai.targetSdkVersion);
+        PackageInfo pi;
+        try {
+            pi = ctx.getPackageManager().getPackageInfo(ai.packageName, 0);
+        } catch (PackageManager.NameNotFoundException e) {
+            return;
+        }
+        ApplicationInfo piAppInfo = pi.applicationInfo;
+        if (piAppInfo != null && Objects.equals(ai.getBaseCodePath(), piAppInfo.getBaseCodePath())) {
+            String sharedUid = pi.sharedUserId;
+            if (sharedUid != null) {
+                dst.add("sharedUid: " + sharedUid);
+            }
+        }
+    }
 
     public static void maybeAddHeaderLines(Context ctx, ArrayList<String> dst) {
         int userId = ctx.getUserId();

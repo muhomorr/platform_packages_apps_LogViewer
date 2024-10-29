@@ -3,6 +3,7 @@ package app.grapheneos.logviewer;
 import android.annotation.Nullable;
 import android.app.ApplicationErrorReport;
 import android.content.Intent;
+import android.content.pm.ApplicationInfo;
 import android.ext.LogViewerApp;
 import android.os.Build;
 import android.os.Bundle;
@@ -11,12 +12,9 @@ import android.util.StringBuilderPrinter;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
 import java.util.List;
 import java.util.zip.GZIPInputStream;
 
@@ -67,23 +65,31 @@ public class ErrorReportActivity extends BaseActivity {
             }
         }
 
+        ApplicationInfo sourceAppInfo = extras.getParcelable(LogViewerApp.EXTRA_SOURCE_APP_INFO, ApplicationInfo.class);
+
         String msg = new String(msgBytes, UTF_8);
         String body;
         {
-            var sb = new StringBuilder(msg.length() + 200);
-            String type = extras.getString(LogViewerApp.EXTRA_ERROR_TYPE, "crash");
-            sb.append("type: ").append(type).append('\n');
+            ArrayList<String> header = new ArrayList<>();
+            header.add("type: " + extras.getString(LogViewerApp.EXTRA_ERROR_TYPE, "crash"));
             if (!msg.contains(Build.FINGERPRINT)) {
-                sb.append("osVersion: ").append(Build.FINGERPRINT).append('\n');
+                header.add("osVersion: " + Build.FINGERPRINT);
             }
-            if (msg.charAt(0) != '\n' && !msg.startsWith("osVersion: ")) {
+            Utils.maybeAddHeaderLines(this, header);
+            if (sourceAppInfo != null) {
+                Utils.addPackageInfoHeaderLines(this, sourceAppInfo, header);
+            }
+            var sb = new StringBuilder(msg.length() + 1000);
+            sb.append(String.join("\n", header));
+            sb.append('\n');
+            char ch0 = msg.charAt(0);
+            if (ch0 != ' ' && ch0 != '\n' && ch0 != '*' && !msg.startsWith("osVersion: ")) {
                 sb.append('\n');
             }
             sb.append(msg);
             body = sb.toString();
         }
-        String sourcePkg = extras.getString(LogViewerApp.EXTRA_SOURCE_PACKAGE);
-
+        String sourcePkg = sourceAppInfo != null ? sourceAppInfo.packageName : null;
         String title = extras.getString(Intent.EXTRA_TITLE);
         if (title == null) {
             title = sourcePkg != null ?
@@ -137,8 +143,8 @@ public class ErrorReportActivity extends BaseActivity {
         if (includeOsVersion) {
             l.add("osVersion: " + Build.FINGERPRINT);
         }
-        l.add("package: " + r.packageName + ':' + r.packageVersion);
         Utils.maybeAddHeaderLines(this, l);
+        Utils.addPackageInfoHeaderLines(this, r.applicationInfo, l);
         l.add("process: " + r.processName);
         if (r.type == ApplicationErrorReport.TYPE_CRASH && r.crashInfo.processUptimeMs > 0) {
             l.add("processUptime: " + r.crashInfo.processUptimeMs

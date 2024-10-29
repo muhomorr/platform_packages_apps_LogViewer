@@ -91,19 +91,17 @@ public class LogcatActivity extends BaseActivity {
         String logLevelStr = LOG_LEVELS.get(logLevel);
         cmd.add("*:" + logLevelStr.charAt(0));
 
-        long packageVersion = 0L;
+        ApplicationInfo targetAppInfo = null;
 
         if (targetPkg != null) {
-            ApplicationInfo ai;
             try {
-                ai = getPackageManager().getApplicationInfo(targetPkg, 0);
+                targetAppInfo = getPackageManager().getApplicationInfo(targetPkg, 0);
             } catch (PackageManager.NameNotFoundException e) {
                 Log.d(TAG, "", e);
                 return null;
             }
 
-            cmd.add("--uid=" + ai.uid);
-            packageVersion = ai.longVersionCode;
+            cmd.add("--uid=" + targetAppInfo.uid);
         }
 
         var pb = new ProcessBuilder();
@@ -132,7 +130,7 @@ public class LogcatActivity extends BaseActivity {
         header.add("osVersion: " + Build.FINGERPRINT);
         Utils.maybeAddHeaderLines(this, header);
         if (targetPkg != null) {
-            header.add("packageName: " + targetPkg + ":" + packageVersion);
+            Utils.addPackageInfoHeaderLines(this, targetAppInfo, header);
         }
         header.add("buffers: " + logBuffersStr);
         header.add("level: " + logLevelStr.toLowerCase());
