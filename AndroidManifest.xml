@@ -46,7 +46,7 @@
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
-        
+
         <provider
             android:name=".BlobProvider"
             android:authorities="${applicationId}.BlobProvider"
