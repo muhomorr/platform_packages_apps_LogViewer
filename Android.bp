@@ -15,13 +15,13 @@ android_app {
     ],
 
     required: [
-        "privapp-permissions_app.grapheneos.logviewer.xml",
+        "etc_permissions_app.grapheneos.logviewer.xml",
     ],
 }
 
 prebuilt_etc {
-    name: "privapp-permissions_app.grapheneos.logviewer.xml",
-    src:  "privapp-permissions_app.grapheneos.logviewer.xml",
+    name: "etc_permissions_app.grapheneos.logviewer.xml",
+    src:  "etc/permissions/app.grapheneos.logviewer.xml",
     sub_dir: "permissions",
     filename_from_src: true,
 }
