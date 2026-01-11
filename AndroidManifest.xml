@@ -24,6 +24,7 @@
             android:name=".LogcatActivity"
             android:permission="app.grapheneos.logviewer.SHOW_LOGCAT"
             android:documentLaunchMode="always"
+            android:showWhenLocked="true"
             android:exported="true" >
 
             <intent-filter>
