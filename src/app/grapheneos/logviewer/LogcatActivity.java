@@ -5,6 +5,7 @@ import android.app.AlertDialog;
 import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
+import android.ext.LogViewerApp;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.UserManager;
@@ -29,10 +30,6 @@ import static java.util.Collections.singletonList;
 public class LogcatActivity extends BaseActivity {
     private static final String TAG = LogcatActivity.class.getSimpleName();
 
-    private static final String ACTION_SHOW_EVENT_LOG = LogcatActivity.class.getName() + ".SHOW_EVENT_LOG";
-    private static final String ACTION_SHOW_RADIO_LOG = LogcatActivity.class.getName() + ".SHOW_RADIO_LOG";
-    private static final String EXTRA_LOG_BUFFERS = LogcatActivity.class.getName() + ".LOG_BUFFERS";
-    private static final String EXTRA_LOG_LEVEL = LogcatActivity.class.getName() + ".LOG_LEVEL";
     private static final String EXTRA_FILTER_REGEX = LogcatActivity.class.getName() + ".FILTER_REGEX";
 
     static final int TYPE_APP_LOG = 1;
@@ -223,7 +220,7 @@ public class LogcatActivity extends BaseActivity {
 
     @Log.Level
     private int getLogLevel() {
-        int v = getIntent().getIntExtra(EXTRA_LOG_LEVEL, Log.VERBOSE);
+        int v = getIntent().getIntExtra(LogViewerApp.EXTRA_LOG_LEVEL, Log.VERBOSE);
         return min(Log.ASSERT, max(Log.VERBOSE, v));
     }
 
@@ -264,7 +261,7 @@ public class LogcatActivity extends BaseActivity {
     }
 
     private ArrayList<String> getLogBuffers() {
-        ArrayList<String> l = getIntent().getStringArrayListExtra(EXTRA_LOG_BUFFERS);
+        ArrayList<String> l = getIntent().getStringArrayListExtra(LogViewerApp.EXTRA_LOG_BUFFERS);
         if (l == null) {
             l = getDefaultLogBuffers();
         }
@@ -310,7 +307,7 @@ public class LogcatActivity extends BaseActivity {
                     return;
                 }
                 var i = new Intent(getIntent());
-                i.putExtra(EXTRA_LOG_BUFFERS, list);
+                i.putExtra(LogViewerApp.EXTRA_LOG_BUFFERS, list);
                 startActivity(i);
             });
             b.show();
@@ -336,7 +333,7 @@ public class LogcatActivity extends BaseActivity {
             b.setTitle(R.string.log_level);
             b.setSingleChoiceItems(items, curLevelIdx, (d, idx) -> {
                 var i = new Intent(getIntent());
-                i.putExtra(EXTRA_LOG_LEVEL, map.keyAt(idx));
+                i.putExtra(LogViewerApp.EXTRA_LOG_LEVEL, map.keyAt(idx));
                 startActivity(i);
                 d.dismiss();
             });
